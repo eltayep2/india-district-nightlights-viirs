@@ -8,8 +8,8 @@ __pycache__/
 data/raw/
 data/processed/
 
-# outputs (optional: keep outputs out of git; you can commit small CSV if desired)
-output/
+# raw raster tiles (large, regenerable)
+output/geojson/.gitkeep
 
 # notebooks
 .ipynb_checkpoints/
