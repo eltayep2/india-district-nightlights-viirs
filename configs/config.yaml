@@ -18,8 +18,8 @@ nightlights:
     # Option A (recommended): Earth Engine with service account
     use_earth_engine: true
     ee_scale: 1000  # output resolution in metres; 1000m is ideal for district-level stats
-    ee_project: "shining-insight-436416-c8"
-    ee_service_account_key: "sa-key.json"
+    ee_project: "YOUR_GCP_PROJECT_ID"           # replace with your Google Cloud project ID
+    ee_service_account_key: "sa-key.json"       # place your service account key JSON here
 
     # Option B: EOG/Payne Institute VNL annual tiles (set use_earth_engine: false)
     eog_base_url: "https://eogdata.mines.edu/nighttime_light/annual/vnl_v22/"
