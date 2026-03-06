@@ -1,20 +1,32 @@
 from __future__ import annotations
 
-import io
+import time
 import zipfile
 from pathlib import Path
 
 import requests
+from rich import print as rprint
 
 
-def download_file(url: str, dest: Path, chunk: int = 1 << 20) -> Path:
+def download_file(url: str, dest: Path, chunk: int = 1 << 20, retries: int = 3) -> Path:
+    """Download a file with automatic retry on failure."""
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with requests.get(url, stream=True, timeout=120) as r:
-        r.raise_for_status()
-        with open(dest, "wb") as f:
-            for part in r.iter_content(chunk_size=chunk):
-                if part:
-                    f.write(part)
+
+    for attempt in range(1, retries + 1):
+        try:
+            with requests.get(url, stream=True, timeout=120) as r:
+                r.raise_for_status()
+                with open(dest, "wb") as f:
+                    for part in r.iter_content(chunk_size=chunk):
+                        if part:
+                            f.write(part)
+            return dest
+        except (requests.RequestException, IOError) as e:
+            if attempt == retries:
+                raise
+            rprint(f"[yellow]Download attempt {attempt}/{retries} failed: {e}. Retrying in 5s...[/yellow]")
+            time.sleep(5)
+
     return dest
 
 
