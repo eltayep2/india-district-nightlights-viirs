@@ -40,46 +40,83 @@ def _ee_init(project: str | None = None, sa_key_path: str | None = None):
     if project:
         ee_kwargs["project"] = project
 
+    # Try service account first
     if sa_key_path:
-        import json
-        with open(sa_key_path) as f:
-            sa_info = json.load(f)
-        sa_email = sa_info["client_email"]
-        credentials = ee.ServiceAccountCredentials(sa_email, sa_key_path)
-        ee.Initialize(credentials=credentials, **ee_kwargs)
-        return
+        sa_path = Path(sa_key_path)
+        if sa_path.exists():
+            import json as _json
+            with open(sa_path) as f:
+                sa_info = _json.load(f)
+            sa_email = sa_info["client_email"]
+            credentials = ee.ServiceAccountCredentials(sa_email, str(sa_path))
+            ee.Initialize(credentials=credentials, **ee_kwargs)
+            rprint(f"[green]Earth Engine initialized with service account: {sa_email}[/green]")
+            return
+        else:
+            rprint(
+                f"[yellow]Service account key '{sa_key_path}' not found, "
+                f"falling back to OAuth credentials.[/yellow]"
+            )
 
+    # Try default credentials (from `earthengine authenticate`)
     try:
         ee.Initialize(**ee_kwargs)
+        rprint(f"[green]Earth Engine initialized with default credentials (project: {project})[/green]")
         return
-    except Exception:
-        pass
+    except Exception as e:
+        rprint(f"[yellow]EE default auth failed: {e}[/yellow]")
 
+    # Try fallback public projects
     if not project:
         for fallback in ("earthengine-legacy", "earthengine-public"):
             try:
                 ee.Initialize(**{**ee_kwargs, "project": fallback})
+                rprint(f"[green]Earth Engine initialized with fallback project: {fallback}[/green]")
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                rprint(f"[yellow]EE fallback '{fallback}' failed: {e}[/yellow]")
 
-    ee.Authenticate()
+    # Last resort: interactive browser auth
+    rprint(
+        "[yellow]No valid Earth Engine credentials found.[/yellow]\n"
+        "  Opening browser for authentication...\n"
+        "  (If this is a headless server, set up a service account instead.\n"
+        "   See HOW-TO-USE.md for instructions.)"
+    )
     try:
+        ee.Authenticate()
         ee.Initialize(**ee_kwargs)
-    except Exception:
-        ee.Initialize(**{**ee_kwargs, "project": project or "earthengine-legacy"})
+        rprint("[green]Earth Engine initialized after browser authentication.[/green]")
+    except Exception as e:
+        raise RuntimeError(
+            f"Could not initialize Earth Engine: {e}\n\n"
+            "Troubleshooting:\n"
+            "  1. Run: earthengine authenticate\n"
+            "  2. Run: earthengine set_project YOUR_PROJECT_ID\n"
+            "  3. Make sure ee_project is set correctly in configs/config.yaml\n"
+            "  4. See HOW-TO-USE.md for detailed setup instructions."
+        ) from e
 
 
-def _download_tile(url: str, dest: Path, chunk: int = 1 << 20):
-    """Stream-download a URL to a local file."""
+def _download_tile(url: str, dest: Path, chunk: int = 1 << 20, retries: int = 3):
+    """Stream-download a URL to a local file with retry logic."""
     import requests
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with requests.get(url, stream=True, timeout=600) as r:
-        r.raise_for_status()
-        with open(dest, "wb") as f:
-            for part in r.iter_content(chunk_size=chunk):
-                if part:
-                    f.write(part)
+
+    for attempt in range(1, retries + 1):
+        try:
+            with requests.get(url, stream=True, timeout=600) as r:
+                r.raise_for_status()
+                with open(dest, "wb") as f:
+                    for part in r.iter_content(chunk_size=chunk):
+                        if part:
+                            f.write(part)
+            return  # success
+        except (requests.RequestException, IOError) as e:
+            if attempt == retries:
+                raise
+            rprint(f"[yellow]Download attempt {attempt}/{retries} failed: {e}. Retrying in 5s...[/yellow]")
+            time.sleep(5)
 
 
 def download_viirs_ee(
@@ -187,7 +224,6 @@ def _clip_raster_to_india(src_path: Path, dst_path: Path):
     """Clip a global GeoTIFF to the India bounding box using rasterio."""
     import rasterio
     from rasterio.windows import from_bounds
-    from rasterio.transform import from_bounds as transform_from_bounds
 
     with rasterio.open(src_path) as src:
         window = from_bounds(*INDIA_BBOX, transform=src.transform)
