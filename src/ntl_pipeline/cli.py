@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -14,23 +15,30 @@ from .exporters import export_panel_csv, export_year_geojson
 
 app = typer.Typer(add_completion=False)
 
+# ---------------------------------------------------------------------------
+# Path constants â€” single source of truth for data layout
+# ---------------------------------------------------------------------------
+DATA_RAW = Path("data/raw")
+BOUNDARIES_DIR = DATA_RAW / "boundaries" / "datameet_districts_2011"
+VIIRS_DIR = DATA_RAW / "viirs"
+
+DEFAULT_CONFIG = "configs/config.yaml"
+
 
 @app.command("download-boundaries")
-def download_boundaries(config: Path = typer.Option(..., "--config")):
+def download_boundaries(config: Path = typer.Option(DEFAULT_CONFIG, "--config")):
     cfg = Config.load(config)
-    raw_dir = Path("data/raw")
-    shp = download_datameet_boundaries(cfg, raw_dir)
+    shp = download_datameet_boundaries(cfg, DATA_RAW)
     print(f"[green]Boundaries ready:[/green] {shp}")
 
 
 @app.command("download-viirs")
-def download_viirs_cmd(config: Path = typer.Option(..., "--config")):
+def download_viirs_cmd(config: Path = typer.Option(DEFAULT_CONFIG, "--config")):
     """Download VIIRS annual nightlight rasters (Earth Engine or EOG)."""
     cfg = Config.load(config)
     start = int(cfg.get("nightlights", "years", "start"))
     end = int(cfg.get("nightlights", "years", "end"))
     years = list(range(start, end + 1))
-    target = Path("data/raw/viirs")
 
     use_ee = cfg.get("nightlights", "viirs", "use_earth_engine", default=True)
     eog_url = cfg.get("nightlights", "viirs", "eog_base_url")
@@ -41,7 +49,7 @@ def download_viirs_cmd(config: Path = typer.Option(..., "--config")):
 
     paths = download_viirs(
         years=years,
-        out_dir=target,
+        out_dir=VIIRS_DIR,
         use_earth_engine=use_ee,
         eog_base_url=eog_url,
         product_band=band,
@@ -49,38 +57,45 @@ def download_viirs_cmd(config: Path = typer.Option(..., "--config")):
         ee_project=ee_project,
         ee_sa_key=ee_sa_key,
     )
-    print(f"[green]Downloaded {len(paths)} raster(s) to {target}[/green]")
+    print(f"[green]Downloaded {len(paths)} raster(s) to {VIIRS_DIR}[/green]")
 
 
 @app.command("prep-rasters")
 def prep_rasters(
-    config: Path = typer.Option(..., "--config"),
+    config: Path = typer.Option(DEFAULT_CONFIG, "--config"),
     source: str = typer.Option("viirs", "--source"),
 ):
-    # For many EOG products CRS is already EPSG:4326. Keep as a hook.
-    print(f"[green]prep-rasters[/green] no-op for source={source} (assumes EPSG:4326).")
+    """Reproject rasters if needed (currently a no-op for VIIRS)."""
+    print(
+        f"[dim]prep-rasters: skipped for source={source}.[/dim]\n"
+        f"[dim]  VIIRS data from Earth Engine is already in EPSG:4326.[/dim]\n"
+        f"[dim]  This step is reserved for future data sources (e.g., DMSP).[/dim]"
+    )
 
 
 @app.command("zonal-stats")
-def zonal_stats_cmd(config: Path = typer.Option(..., "--config")):
+def zonal_stats_cmd(config: Path = typer.Option(DEFAULT_CONFIG, "--config")):
     cfg = Config.load(config)
     start = int(cfg.get("nightlights", "years", "start"))
     end = int(cfg.get("nightlights", "years", "end"))
     metrics = list(cfg.get("processing", "metrics"))
 
     # boundaries
-    shp_dir = Path("data/raw/boundaries/datameet_districts_2011")
-    shp_files = list(shp_dir.glob("*.shp"))
+    shp_files = list(BOUNDARIES_DIR.glob("*.shp"))
     if not shp_files:
-        raise FileNotFoundError("District shapefile not found. Run: make boundaries")
+        print(f"[red]District shapefile not found in {BOUNDARIES_DIR}[/red]")
+        print("Run first: python -m ntl_pipeline.cli download-boundaries")
+        sys.exit(1)
     districts = load_districts(shp_files[0])
 
     # rasters
     rows = []
     for year in range(start, end + 1):
-        raster_path = Path(f"data/raw/viirs/VIIRS_{year}.tif")
+        raster_path = VIIRS_DIR / f"VIIRS_{year}.tif"
         if not raster_path.exists():
-            raise FileNotFoundError(f"Missing raster for {year}: {raster_path}")
+            print(f"[red]Missing raster for {year}: {raster_path}[/red]")
+            print("Run first: python -m ntl_pipeline.cli download-viirs")
+            sys.exit(1)
         print(f"Computing zonal stats for {year}...")
         rows.append(compute_zonal_stats(districts, raster_path, year, metrics))
 
@@ -91,16 +106,19 @@ def zonal_stats_cmd(config: Path = typer.Option(..., "--config")):
 
 
 @app.command("export-geojson")
-def export_geojson(config: Path = typer.Option(..., "--config")):
+def export_geojson(config: Path = typer.Option(DEFAULT_CONFIG, "--config")):
     cfg = Config.load(config)
     csv_path = Path(cfg.get("outputs", "csv_path"))
     if not csv_path.exists():
-        raise FileNotFoundError(f"Missing panel CSV: {csv_path}. Run: make stats")
+        print(f"[red]Missing panel CSV: {csv_path}[/red]")
+        print("Run first: python -m ntl_pipeline.cli zonal-stats")
+        sys.exit(1)
 
-    shp_dir = Path("data/raw/boundaries/datameet_districts_2011")
-    shp_files = list(shp_dir.glob("*.shp"))
+    shp_files = list(BOUNDARIES_DIR.glob("*.shp"))
     if not shp_files:
-        raise FileNotFoundError("District shapefile not found. Run: make boundaries")
+        print(f"[red]District shapefile not found in {BOUNDARIES_DIR}[/red]")
+        print("Run first: python -m ntl_pipeline.cli download-boundaries")
+        sys.exit(1)
     districts = load_districts(shp_files[0])
 
     df = pd.read_csv(csv_path)
@@ -111,9 +129,49 @@ def export_geojson(config: Path = typer.Option(..., "--config")):
         print(f"[green]Wrote[/green] {out_path}")
 
 
+def _preflight(cfg: Config, config_path: Path):
+    """Run pre-flight checks before starting the full pipeline."""
+    print("[bold]Pre-flight checks...[/bold]")
+
+    # Config is already validated by Config.load(), but let's summarize
+    start = int(cfg.get("nightlights", "years", "start"))
+    end = int(cfg.get("nightlights", "years", "end"))
+    years = list(range(start, end + 1))
+    use_ee = cfg.get("nightlights", "viirs", "use_earth_engine", default=True)
+    ee_project = cfg.get("nightlights", "viirs", "ee_project")
+
+    print(f"  Config     : {config_path}")
+    print(f"  Years      : {start}-{end} ({len(years)} years)")
+    print(f"  Strategy   : {'Earth Engine' if use_ee else 'EOG direct download'}")
+    if use_ee:
+        print(f"  GCP Project: {ee_project}")
+    print(f"  CSV output : {cfg.get('outputs', 'csv_path')}")
+    print(f"  GeoJSON dir: {cfg.get('outputs', 'geojson_dir')}")
+
+    # Test EE auth early so we fail fast (before downloading boundaries)
+    if use_ee:
+        print("\n  Testing Earth Engine connection...")
+        try:
+            from .viirs_download import _ee_init
+            sa_key = cfg.get("nightlights", "viirs", "ee_service_account_key", default=None)
+            _ee_init(project=ee_project, sa_key_path=sa_key)
+            print("  [green]Earth Engine: OK[/green]")
+        except Exception as e:
+            print(f"  [red]Earth Engine auth failed: {e}[/red]")
+            print("  Fix your credentials before running the pipeline.")
+            print("  See HOW-TO-USE.md for setup instructions.")
+            sys.exit(1)
+
+    print()
+
+
 @app.command("run-all")
-def run_all(config: Path = typer.Option("configs/config.yaml", "--config")):
+def run_all(config: Path = typer.Option(DEFAULT_CONFIG, "--config")):
     """Run the full pipeline end-to-end: boundaries -> VIIRS -> zonal stats -> GeoJSON."""
+    cfg = Config.load(config)
+
+    _preflight(cfg, config)
+
     print("[bold]Step 1/4: Downloading district boundaries...[/bold]")
     download_boundaries(config)
 
@@ -126,7 +184,6 @@ def run_all(config: Path = typer.Option("configs/config.yaml", "--config")):
     print("\n[bold]Step 4/4: Exporting GeoJSON files...[/bold]")
     export_geojson(config)
 
-    cfg = Config.load(config)
     print(f"\n[bold green]Done![/bold green]")
     print(f"  CSV  : {cfg.get('outputs', 'csv_path')}")
     print(f"  JSON : {cfg.get('outputs', 'geojson_dir')}/")
