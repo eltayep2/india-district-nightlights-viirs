@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -21,10 +21,15 @@ def compute_zonal_stats(
         if nodata is None:
             nodata = src.nodata
 
+    # Include "count" in the single pass to avoid processing the raster twice
+    stats_to_compute = list(metrics)
+    if "count" not in stats_to_compute:
+        stats_to_compute.append("count")
+
     zs = zonal_stats(
         districts,
         raster_path,
-        stats=metrics,
+        stats=stats_to_compute,
         nodata=nodata,
         geojson_out=False,
         all_touched=False,
@@ -36,22 +41,11 @@ def compute_zonal_stats(
     out.insert(1, "district_name", districts["district_name"].values)
     out.insert(2, "state_name", districts["state_name"].values)
 
-    # Coverage diagnostic: proportion of pixels with valid data inside each polygon
-    # rasterstats doesn't directly return pixel counts unless requested; request count + nodata count
-    zs2 = zonal_stats(
-        districts,
-        raster_path,
-        stats=["count"],
-        nodata=nodata,
-        geojson_out=False,
-        all_touched=False,
-    )
-    counts = pd.DataFrame(zs2)["count"].astype(float)
-    out["valid_pixel_count"] = counts
-
-    # total_pixel_count isn't available without a second pass; approximate via all pixels with nodata excluded
-    # If you need precise shares, compute a mask-based count with rasterio.features.geometry_mask.
-    out["valid_pixel_share"] = np.nan
+    # Extract valid pixel count from the single pass
+    if "count" in out.columns:
+        out["valid_pixel_count"] = out.pop("count").astype(float)
+    else:
+        out["valid_pixel_count"] = np.nan
 
     # Interpretable transforms
     for col in ["mean", "median"]:
