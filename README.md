@@ -56,7 +56,7 @@ One file per year with district polygons and all nightlight metrics attached -- 
 ### 1. Clone and set up
 
 ```bash
-git clone https://github.com/yashveeeeeer/india-district-nightlights-viirs.git
+git clone https://github.com/yashveeeeeeer/india-district-nightlights-viirs.git
 cd india-district-nightlights-viirs
 python -m venv .venv
 

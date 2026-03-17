@@ -105,7 +105,7 @@ Use this if you're running the pipeline on a server without a browser, or if you
 
 ```bash
 # Clone the repository
-git clone https://github.com/yashveeeeeer/india-district-nightlights-viirs.git
+git clone https://github.com/yashveeeeeeer/india-district-nightlights-viirs.git
 cd india-district-nightlights-viirs
 
 # Create a virtual environment
